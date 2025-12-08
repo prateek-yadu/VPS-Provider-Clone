@@ -12,7 +12,7 @@ export const me = async (req: customRequest, res: Response) => {
         const id = req.id; // gets user id 
 
         // fetches user data 
-        const [user, fields]: any = await pool.query('SELECT name, email, phone, image_url as imageUrl FROM users WHERE id=?', [id]);
+        const [user, fields]: any = await pool.query('SELECT name, email, phone, profile_image as profileImage FROM users WHERE id=?', [id]);
 
         if (user.length != 0) {
             // sends user data 
