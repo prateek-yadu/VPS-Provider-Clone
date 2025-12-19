@@ -120,12 +120,57 @@ export const createVM = async (req: customRequest, res: Response) => {
   }
 };
 
-export const startVM = async (req: Request, res: Response) => {
-  const startReq = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${req.params.vmId}/state?project=${process.env.PROJECT}`, {
-    method: "PUT",
-    body: JSON.stringify({ "action": "start" })
-  })).json();
-  res.send(startReq);
+export const startVM = async (req: customRequest, res: Response) => {
+
+  try {
+    const userId = req.id;
+    const vmName = req.params.vmId;
+
+    const [vmExists]: any = await pool.query('SELECT id AS vm_id, name, status, user_plan_id FROM instances WHERE name=? AND user_id=?', [vmName, userId]);
+
+    const planId = vmExists[0]?.user_plan_id;
+    const vmStatus = vmExists[0]?.status;
+    const vmId = vmExists[0]?.vm_id;
+
+    if (vmExists.length != 0) {
+      // gets plan from VM is provisioned
+      const [plan]: any = await pool.query('SELECT u.in_use, u.expires_at, p.name, p.vCPU, p.memory, p.storage, p.backups FROM user_plans u INNER JOIN plans p ON u.plan_id=p.id WHERE u.id=? AND u.user_id=?', [planId, userId]);
+
+      const currentDate = new Date();
+      const expired: boolean = plan[0]?.expires_at <= currentDate;
+
+      // cheks if plan is expired
+      if (expired) {
+        send.forbidden(res, "Can not perform any action plan expired.");
+      } else {
+        if (vmStatus === "Running") {
+          send.badRequest(res, "VM is already Running.");
+        } else {
+          const vmStartReq: any = await (await fetch(`${process.env.LXD_AGENT_SERVER}/api/v1/instance/${vmId}/start`, {
+            method: "PUT"
+          })).json();
+
+          if (vmStartReq.status === 200) {
+            // update state in DB
+            const [updateState]: any = await pool.query('UPDATE instances SET status=? WHERE id=?', ["Running", vmId]);
+
+            send.ok(res, "VM started successfully")
+          } else {
+            send.internalError(res);
+          }
+        }
+      }
+    } else {
+      send.notFound(res, "VM not found");
+    }
+  } catch (error) {
+    send.internalError(res);
+  }
+  // const startReq = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${req.params.vmId}/state?project=${process.env.PROJECT}`, {
+  //   method: "PUT",
+  //   body: JSON.stringify({ "action": "start" })
+  // })).json();
+  // res.send(startReq);
 };
 
 export const stoptVM = async (req: Request, res: Response) => {
