@@ -144,9 +144,65 @@ export const restartVM = async (req: Request, res: Response) => {
   res.send(restartReq);
 };
 
-export const destroyVM = async (req: Request, res: Response) => {
-  const destryReq = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${req.params.vmId}?project=${process.env.PROJECT}`, {
-    method: "DELETE"
-  })).json();
-  res.send(destryReq);
+export const destroyVM = async (req: customRequest, res: Response) => {
+
+  try {
+    const userId = req.id;
+    const { vmName } = req.body;
+
+    const [vmExists]: any = await pool.query('SELECT i.id AS vm_id, p.id AS ip_id, i.name, i.status, p.ip, i.user_plan_id FROM instances i INNER JOIN ip_addresses p ON i.address_id=p.id WHERE i.name=? AND i.user_id=?', [vmName, userId]);
+
+    const planId = vmExists[0]?.user_plan_id;
+    const vmStatus = vmExists[0]?.status;
+    const vmId = vmExists[0]?.vm_id;
+    const vmIPId = vmExists[0]?.ip_id;
+
+    if (vmExists.length != 0) {
+      // gets plan from VM is provisioned
+      const [plan]: any = await pool.query('SELECT u.in_use, u.expires_at, p.name, p.vCPU, p.memory, p.storage, p.backups FROM user_plans u INNER JOIN plans p ON u.plan_id=p.id WHERE u.id=? AND u.user_id=?', [planId, userId]);
+
+      const currentDate = new Date();
+      const expired: boolean = plan[0]?.expires_at <= currentDate;
+
+      // cheks if plan is expired
+      if (expired) {
+        send.forbidden(res, "Can not perform any action plan expired.");
+      } else {
+        if (vmStatus !== "Stopped") {
+          send.badRequest(res, "Stop the VM first");
+        } else {
+
+          // send data to lxd agent to delete VM
+          const vmDeletetionReq: any = await (await fetch(`${process.env.LXD_AGENT_SERVER}/api/v1/instance`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id: vmId })
+          })).json();
+
+          if (vmDeletetionReq.status === 200) {
+            // delete data from instance table
+            const [deleteVM]: any = await pool.query('DELETE FROM instances WHERE id=?', [vmId]);
+
+            // release user plan from in_use
+            const [releaseUserPlan]: any = await pool.query('UPDATE user_plans SET in_use=0 WHERE id=?', [planId]);
+
+            // release reserved IP
+            const [releaseIP]: any = await pool.query('UPDATE ip_addresses SET in_use=0 WHERE id=?', [vmIPId]);
+
+            send.ok(res, "VM deleted successfully.");
+          } else {
+            send.internalError(res);
+          }
+        }
+      }
+
+    } else {
+      send.notFound(res, "VM not found");
+    }
+  } catch (error) {
+    send.internalError(res);
+  }
+
 };
