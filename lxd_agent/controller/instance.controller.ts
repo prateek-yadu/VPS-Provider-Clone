@@ -53,6 +53,33 @@ export const createInstance = async (req: Request, res: Response) => {
     }
 };
 
+export const startInstance = async (req: Request, res: Response) => {
+
+    try {
+        const id = req.params.vmId;
+
+        if (id === undefined) {
+            send.badRequest(res);
+        } else {
+
+            // start VM
+            const lxdResponse: any = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${id}/state?project=${process.env.PROJECT}`, {
+                method: "PUT",
+                body: JSON.stringify({ "action": "start" })
+            })).json();
+
+            if (lxdResponse.status_code === 100) {
+                send.ok(res);
+            } else {
+                send.internalError(res);
+            }
+        }
+
+    } catch (error) {
+        send.internalError(res);
+    }
+};
+
 export const destroyInstance = async (req: Request, res: Response) => {
 
     try {
