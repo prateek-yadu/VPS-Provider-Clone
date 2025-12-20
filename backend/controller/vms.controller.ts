@@ -289,7 +289,7 @@ export const destroyVM = async (req: customRequest, res: Response) => {
 
   try {
     const userId = req.id;
-    const { vmName } = req.body;
+    const vmName = req.params.vmId;
 
     const [vmExists]: any = await pool.query('SELECT i.id AS vm_id, p.id AS ip_id, i.name, i.status, p.ip, i.user_plan_id FROM instances i INNER JOIN ip_addresses p ON i.address_id=p.id WHERE i.name=? AND i.user_id=?', [vmName, userId]);
 
