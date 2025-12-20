@@ -26,9 +26,21 @@ interface instanceData {
   regionId?: string;
 }
 
-export const allVMs = async (req: Request, res: Response) => {
-  const vmsList = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances?project=${process.env.PROJECT}&recursion=2`)).json();
-  res.send(vmsList);
+export const allVMs = async (req: customRequest, res: Response) => {
+
+  try {
+    const userId = req.id;
+
+    const [vm]: any = await pool.query('SELECT i.name, i.description, i.status, m.full_name AS image, p.ip, r.name AS region_name, r.code AS region_code, up.expires_at, pl.name, pl.vCPU, pl.memory, pl.storage, pl.backups FROM instances i INNER JOIN ip_addresses p ON i.address_id=p.id INNER JOIN images m ON i.image_id=m.id INNER JOIN regions r ON i.region_id=r.id INNER JOIN user_plans up ON i.user_plan_id=up.id INNER JOIN plans pl ON up.plan_id=pl.id WHERE i.user_id=?', [userId]);
+
+    if (vm.length != 0) {
+      send.ok(res, "", vm);
+    } else {
+      send.notFound(res, "VM not found by this name.");
+    }
+  } catch (error) {
+    send.internalError(res);
+  }
 };
 
 export const getVM = async (req: customRequest, res: Response) => {
@@ -47,9 +59,6 @@ export const getVM = async (req: customRequest, res: Response) => {
   } catch (error) {
     send.internalError(res);
   }
-
-
-
 };
 
 export const createVM = async (req: customRequest, res: Response) => {
