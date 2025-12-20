@@ -19,7 +19,7 @@ router.delete("/:vmId", destroyVM)
 router.put("/:vmId/start", startVM)
 
 // stops VM
-router.get("/:vmId/stop", stoptVM)
+router.put("/:vmId/stop", stoptVM)
 
 // restarts VM 
 router.get("/:vmId/restart", restartVM)
