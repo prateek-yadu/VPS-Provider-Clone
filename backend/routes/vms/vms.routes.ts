@@ -22,7 +22,7 @@ router.put("/:vmId/start", startVM)
 router.put("/:vmId/stop", stoptVM)
 
 // restarts VM 
-router.get("/:vmId/restart", restartVM)
+router.put("/:vmId/restart", restartVM)
 
 
 export default router;

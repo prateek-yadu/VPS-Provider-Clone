@@ -31,9 +31,25 @@ export const allVMs = async (req: Request, res: Response) => {
   res.send(vmsList);
 };
 
-export const getVM = async (req: Request, res: Response) => {
-  const VMDetails = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${req.params.vmId}?project=${process.env.PROJECT}&recursion=1`)).json();
-  res.send(VMDetails);
+export const getVM = async (req: customRequest, res: Response) => {
+
+  try {
+    const userId = req.id;
+    const vmName = req.params.vmId;
+
+    const [vm]: any = await pool.query('SELECT i.name, i.description, i.status, m.full_name AS image, p.ip, r.name AS region_name, r.code AS region_code, up.expires_at, pl.name, pl.vCPU, pl.memory, pl.storage, pl.backups FROM instances i INNER JOIN ip_addresses p ON i.address_id=p.id INNER JOIN images m ON i.image_id=m.id INNER JOIN regions r ON i.region_id=r.id INNER JOIN user_plans up ON i.user_plan_id=up.id INNER JOIN plans pl ON up.plan_id=pl.id WHERE i.name=? AND i.user_id=?', [vmName, userId]);
+
+    if (vm.length != 0) {
+      send.ok(res, "", vm[0]);
+    } else {
+      send.notFound(res, "VM not found by this name.");
+    }
+  } catch (error) {
+    send.internalError(res);
+  }
+
+
+
 };
 
 export const createVM = async (req: customRequest, res: Response) => {
@@ -166,11 +182,6 @@ export const startVM = async (req: customRequest, res: Response) => {
   } catch (error) {
     send.internalError(res);
   }
-  // const startReq = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${req.params.vmId}/state?project=${process.env.PROJECT}`, {
-  //   method: "PUT",
-  //   body: JSON.stringify({ "action": "start" })
-  // })).json();
-  // res.send(startReq);
 };
 
 export const stoptVM = async (req: customRequest, res: Response) => {
@@ -221,12 +232,48 @@ export const stoptVM = async (req: customRequest, res: Response) => {
   }
 };
 
-export const restartVM = async (req: Request, res: Response) => {
-  const restartReq = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${req.params.vmId}/state?project=${process.env.PROJECT}`, {
-    method: "PUT",
-    body: JSON.stringify({ "action": "restart", "force": true })
-  })).json();
-  res.send(restartReq);
+export const restartVM = async (req: customRequest, res: Response) => {
+  try {
+    const userId = req.id;
+    const vmName = req.params.vmId;
+
+    const [vmExists]: any = await pool.query('SELECT id AS vm_id, name, status, user_plan_id FROM instances WHERE name=? AND user_id=?', [vmName, userId]);
+
+    const planId = vmExists[0]?.user_plan_id;
+    const vmStatus = vmExists[0]?.status;
+    const vmId = vmExists[0]?.vm_id;
+
+    if (vmExists.length != 0) {
+      // gets plan from VM is provisioned
+      const [plan]: any = await pool.query('SELECT u.in_use, u.expires_at, p.name, p.vCPU, p.memory, p.storage, p.backups FROM user_plans u INNER JOIN plans p ON u.plan_id=p.id WHERE u.id=? AND u.user_id=?', [planId, userId]);
+
+      const currentDate = new Date();
+      const expired: boolean = plan[0]?.expires_at <= currentDate;
+
+      // cheks if plan is expired
+      if (expired) {
+        send.forbidden(res, "Can not perform any action plan expired.");
+      } else {
+        if (vmStatus === "Stopped") {
+          send.badRequest(res, "VM is not Running.");
+        } else {
+          const vmRestartReq: any = await (await fetch(`${process.env.LXD_AGENT_SERVER}/api/v1/instance/${vmId}/restart`, {
+            method: "PUT"
+          })).json();
+
+          if (vmRestartReq.status === 200) {
+            send.ok(res, "VM is restarting.");
+          } else {
+            send.internalError(res);
+          }
+        }
+      }
+    } else {
+      send.notFound(res, "VM not found");
+    }
+  } catch (error) {
+    send.internalError(res);
+  }
 };
 
 export const destroyVM = async (req: customRequest, res: Response) => {
