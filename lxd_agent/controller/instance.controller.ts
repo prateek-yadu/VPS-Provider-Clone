@@ -62,7 +62,7 @@ export const startInstance = async (req: Request, res: Response) => {
             send.badRequest(res);
         } else {
 
-            // start VM
+            // start instance
             const lxdResponse: any = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${id}/state?project=${process.env.PROJECT}`, {
                 method: "PUT",
                 body: JSON.stringify({ "action": "start" })
@@ -89,10 +89,37 @@ export const stopInstance = async (req: Request, res: Response) => {
             send.badRequest(res);
         } else {
 
-            // stop VM
+            // stop instance
             const lxdResponse: any = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${id}/state?project=${process.env.PROJECT}`, {
                 method: "PUT",
                 body: JSON.stringify({ "action": "stop", "force": true })
+            })).json();
+
+            if (lxdResponse.status_code === 100) {
+                send.ok(res);
+            } else {
+                send.internalError(res);
+            }
+        }
+
+    } catch (error) {
+        send.internalError(res);
+    }
+};
+
+export const restartInstance = async (req: Request, res: Response) => {
+
+    try {
+        const id = req.params.vmId;
+
+        if (id === undefined) {
+            send.badRequest(res);
+        } else {
+
+            // start restart instance
+            const lxdResponse: any = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances/${id}/state?project=${process.env.PROJECT}`, {
+                method: "PUT",
+                body: JSON.stringify({ "action": "restart" })
             })).json();
 
             if (lxdResponse.status_code === 100) {

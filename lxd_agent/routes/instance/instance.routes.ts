@@ -1,19 +1,22 @@
 import { Router } from "express";
-import { createInstance, destroyInstance, startInstance, stopInstance } from "../../controller/instance.controller.js";
+import { createInstance, destroyInstance, restartInstance, startInstance, stopInstance } from "../../controller/instance.controller.js";
 
 
 const router = Router();
 
-// Create VM
+// Create Instance
 router.post('/', createInstance);
 
-// delete VM
+// delete Instance
 router.delete('/', destroyInstance);
 
-// start VM
+// start Instance
 router.put("/:vmId/start", startInstance)
 
-// stop VM
+// stop Instance
 router.put("/:vmId/stop", stopInstance)
+
+// restart Instance
+router.put("/:vmId/restart", restartInstance)
 
 export default router;
