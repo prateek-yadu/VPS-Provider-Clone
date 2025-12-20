@@ -53,6 +53,23 @@ export const createInstance = async (req: Request, res: Response) => {
     }
 };
 
+export const getAllInstance = async (req: Request, res: Response) => {
+
+    try {
+        // get indivisual instance
+        const lxdResponse: any = await (await fetch(`${process.env.LXD_SERVER}/1.0/instances?project=${process.env.PROJECT}&recursion=2`)).json();
+
+        if (lxdResponse.status_code === 200) {
+            send.ok(res, "", lxdResponse);
+        } else {
+            send.internalError(res);
+        }
+
+    } catch (error) {
+        send.internalError(res);
+    }
+};
+
 export const getIndivisualInstance = async (req: Request, res: Response) => {
 
     try {

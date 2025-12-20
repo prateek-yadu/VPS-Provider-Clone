@@ -1,8 +1,11 @@
 import { Router } from "express";
-import { createInstance, destroyInstance, getIndivisualInstance, restartInstance, startInstance, stopInstance } from "../../controller/instance.controller.js";
+import { createInstance, destroyInstance, getAllInstance, getIndivisualInstance, restartInstance, startInstance, stopInstance } from "../../controller/instance.controller.js";
 
 
 const router = Router();
+
+// list all Instances
+router.get("/", getAllInstance);
 
 // Create Instance
 router.post('/', createInstance);
