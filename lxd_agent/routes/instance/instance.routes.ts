@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createInstance, destroyInstance, startInstance } from "../../controller/instance.controller.js";
+import { createInstance, destroyInstance, startInstance, stopInstance } from "../../controller/instance.controller.js";
 
 
 const router = Router();
@@ -12,5 +12,8 @@ router.delete('/', destroyInstance);
 
 // start VM
 router.put("/:vmId/start", startInstance)
+
+// stop VM
+router.put("/:vmId/stop", stopInstance)
 
 export default router;
