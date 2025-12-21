@@ -87,8 +87,16 @@ export const createVM = async (req: customRequest, res: Response) => {
           send.forbidden(res, "Instance is already initialized with this plan.");
         } else {
           // generates VM's ID (stored as name in LXC/LXD and ID in DB)
-          // NOTE: checks if VM ID is duplicate or not
           const vmID = `vm-${uuidv4()}`;
+
+          // chcek if vm name is same or not
+          const [vmExists]: any = await pool.query('SELECT name FROM instances WHERE name=? AND user_id=?', [vmName, userId]);
+
+          // sends conflict error if vm name is already thier 
+          if (vmExists.length != 0) {
+            send.conflict(res, "VM already exists with this name");
+            return;
+          }
 
           // gets available IP
           const [ip, fields]: any = await pool.query('SELECT * FROM ip_addresses WHERE in_use=0 ORDER BY id ASC LIMIT 1');
