@@ -21,7 +21,7 @@ app.use("/api/v1/vms", authMiddleware, vmsRoutes);
 
 app.use("/api/v1/auth", authRoutes);
 
-app.use("/api/v1/profile", profileRoutes);
+app.use("/api/v1/profile", authMiddleware, profileRoutes);
 
 app.use("/api/v1/plans", plans);
 
