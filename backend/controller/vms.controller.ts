@@ -36,7 +36,7 @@ export const allVMs = async (req: customRequest, res: Response) => {
     if (vm.length != 0) {
       send.ok(res, "", vm);
     } else {
-      send.notFound(res, "VM not found by this name.");
+      send.notFound(res, "No VM Found.");
     }
   } catch (error) {
     send.internalError(res);
