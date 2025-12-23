@@ -31,10 +31,35 @@ export const allVMs = async (req: customRequest, res: Response) => {
   try {
     const userId = req.id;
 
-    const [vm]: any = await pool.query('SELECT i.name, i.description, i.status, m.full_name AS image, p.ip, r.name AS region_name, r.code AS region_code, up.expires_at, pl.name AS plan, pl.vCPU, pl.memory, pl.storage, pl.backups FROM instances i INNER JOIN ip_addresses p ON i.address_id=p.id INNER JOIN images m ON i.image_id=m.id INNER JOIN regions r ON i.region_id=r.id INNER JOIN user_plans up ON i.user_plan_id=up.id INNER JOIN plans pl ON up.plan_id=pl.id WHERE i.user_id=?', [userId]);
+    const [vm]: any = await pool.query('SELECT i.id, i.name, i.description, i.status, m.full_name AS image, p.ip, r.name AS region_name, r.code AS region_code, up.expires_at, pl.name AS plan, pl.vCPU, pl.memory, pl.storage, pl.backups FROM instances i INNER JOIN ip_addresses p ON i.address_id=p.id INNER JOIN images m ON i.image_id=m.id INNER JOIN regions r ON i.region_id=r.id INNER JOIN user_plans up ON i.user_plan_id=up.id INNER JOIN plans pl ON up.plan_id=pl.id WHERE i.user_id=?', [userId]);
 
     if (vm.length != 0) {
-      send.ok(res, "", vm);
+
+      let updatedVMData: any[] = [];
+      let i: number;
+
+      for (i = 0; i < vm.length; i++) {
+
+        const vmStatusReq: any = await (await fetch(`${process.env.LXD_AGENT_SERVER}/api/v1/instance/${vm[i].id}`)).json();
+
+        const VMstatusInDB = vm[i].status;
+        const VMstatusInLXD = vmStatusReq.data.metadata.status;
+
+        if (VMstatusInDB != VMstatusInLXD) {
+
+          const vmID = vm[i].id; // gets vm ID 
+
+          // update VM state in DB
+          const [updateState]: any = await pool.query('UPDATE instances SET status=? WHERE id=?', [VMstatusInLXD, vmID]);
+
+          vm[i].status = VMstatusInLXD;
+        }
+
+        vm[i].id = undefined; // prevent vmID to get exposed
+        updatedVMData.push(vm[i]);
+      };
+
+      send.ok(res, "", updatedVMData);
     } else {
       send.notFound(res, "No VM Found.");
     }
@@ -57,16 +82,16 @@ export const getVM = async (req: customRequest, res: Response) => {
       const VMstatusInDB = vm[0].status;
       const VMstatusInLXD = vmStatusReq.data.metadata.status;
 
-      if (VMstatusInDB != VMstatusInLXD) {        
+      if (VMstatusInDB != VMstatusInLXD) {
 
-        const vmID = vm[0].id // gets vm ID 
-        
+        const vmID = vm[0].id; // gets vm ID 
+
         // update state in DB
-        const [updateState]: any = await pool.query('UPDATE instances SET status=? WHERE id=?', [VMstatusInLXD, vmID])
+        const [updateState]: any = await pool.query('UPDATE instances SET status=? WHERE id=?', [VMstatusInLXD, vmID]);
 
-        vm[0].id = undefined // prevent vmID to get exposed
-        vm[0].status = VMstatusInLXD
-        return send.ok(res, "", vm[0])
+        vm[0].id = undefined; // prevent vmID to get exposed
+        vm[0].status = VMstatusInLXD;
+        return send.ok(res, "", vm[0]);
       }
 
       // prevent vmID to get exposed
@@ -77,6 +102,7 @@ export const getVM = async (req: customRequest, res: Response) => {
     }
   } catch (error) {
     send.internalError(res);
+    console.log(error);
   }
 };
 
