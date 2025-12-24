@@ -285,7 +285,23 @@ export const stoptVM = async (req: customRequest, res: Response) => {
       if (expired) {
         send.forbidden(res, "Can not perform any action plan expired.");
       } else {
-        if (vmStatus === "Stopped") {
+        
+        // checks db status in lxd
+        const vmStatusReq: any = await (await fetch(`${process.env.LXD_AGENT_SERVER}/api/v1/instance/${vmId}`)).json();
+
+        const VMstatusInDB = vmExists[0].status;
+        const VMstatusInLXD = vmStatusReq.data.metadata.status;
+
+        if (VMstatusInDB != VMstatusInLXD) {
+
+          // update state in DB
+          const [updateState]: any = await pool.query('UPDATE instances SET status=? WHERE id=?', [VMstatusInLXD, vmId]);
+
+          vmExists[0].id = undefined; // prevent vmID to get exposed
+          vmExists[0].status = VMstatusInLXD;
+        }
+
+        if (VMstatusInLXD === "Stopped") {
           send.badRequest(res, "VM is already Stopped.");
         } else {
           const vmStopReq: any = await (await fetch(`${process.env.LXD_AGENT_SERVER}/api/v1/instance/${vmId}/stop`, {
