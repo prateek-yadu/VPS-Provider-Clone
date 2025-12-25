@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 interface userData {
     name: string;
     email: string;
-    imageUrl: string;
+    profileImage: string;
 }
 
 export const Login = async (req: Request, res: Response) => {
@@ -17,7 +17,7 @@ export const Login = async (req: Request, res: Response) => {
         const { email, password } = req.body;
 
         // checks if user exists
-        const [exists, fields]: any = await pool.query('SELECT id, name, image_url, password FROM users WHERE email = ?', [email]);
+        const [exists, fields]: any = await pool.query('SELECT id, name, profile_image, password FROM users WHERE email = ?', [email]);
 
         if (exists.length != 0) {
             // checks password is vailed or not
@@ -30,7 +30,7 @@ export const Login = async (req: Request, res: Response) => {
                 const userInfo: userData = {
                     name: exists[0].name,
                     email: email,
-                    imageUrl: exists[0].image_url
+                    profileImage: exists[0].profile_image
                 };
 
                 // genrates token
@@ -74,8 +74,8 @@ export const Register = async (req: Request, res: Response) => {
             const hash = bcrypt.hashSync(password, saltRounds); // genrates hashed password
 
             // creates user
-            const sql = 'INSERT INTO users (id, name, email, password, image_url) VALUES (?, ?, ?, ?, ?)';
-            const values = [userId, name, email, hash, 'none'];
+            const sql = 'INSERT INTO users (id, name, email, password) VALUES (?, ?, ?, ?)';
+            const values = [userId, name, email, hash];
             const [result, fields] = await pool.execute(sql, values);
 
             send.created(res, "User Created Successfuly");

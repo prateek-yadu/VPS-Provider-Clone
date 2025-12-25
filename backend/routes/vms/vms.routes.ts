@@ -16,13 +16,13 @@ router.get("/:vmId", getVM)
 router.delete("/:vmId", destroyVM)
 
 // starts VM
-router.get("/:vmId/start", startVM)
+router.put("/:vmId/start", startVM)
 
 // stops VM
-router.get("/:vmId/stop", stoptVM)
+router.put("/:vmId/stop", stoptVM)
 
 // restarts VM 
-router.get("/:vmId/restart", restartVM)
+router.put("/:vmId/restart", restartVM)
 
 
 export default router;
