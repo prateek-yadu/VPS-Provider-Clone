@@ -11,6 +11,7 @@ import ProtectedRoute from "../components/custom/ProtectedRoute";
 import AuthProvider from "../components/custom/AuthProvider";
 import { Provider } from "react-redux";
 import { store } from "../app/store";
+import Pricing from "../pages/Pricing";
 
 
 export default function AppRoutes() {
@@ -22,6 +23,7 @@ export default function AppRoutes() {
                 { index: true, Component: App },
                 { path: "login", Component: Login },
                 { path: "register", Component: Register },
+                { path: "pricing", Component: Pricing },
                 {
                     Component: ProtectedRoute,
                     children: [
