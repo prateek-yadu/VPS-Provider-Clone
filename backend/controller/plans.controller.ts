@@ -11,7 +11,7 @@ export const Plans = async (req: Request, res: Response) => {
 
     try {
         // gets all plan information 
-        const [plans, fields]: any = await pool.query('SELECT name, description, price, vCPU, memory, storage, backups, validity_days FROM plans');
+        const [plans, fields]: any = await pool.query('SELECT id, name, description, price, vCPU, memory, storage, backups, validity_days FROM plans');
 
         send.ok(res, "", plans);
 
