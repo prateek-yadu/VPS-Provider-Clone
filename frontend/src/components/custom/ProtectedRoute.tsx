@@ -39,7 +39,7 @@ export default function ProtectedRoute() {
                     const userData = {
                         name: userDataRequest.data.name,
                         email: userDataRequest.data.email,
-                        imageUrl: userDataRequest.data.imageUrl
+                        imageUrl: userDataRequest.data.profileImage
                     };
 
                     // stores user data to context & update isAuthenticated to true
