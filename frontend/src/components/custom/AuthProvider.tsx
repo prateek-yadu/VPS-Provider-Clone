@@ -24,7 +24,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode; 
           const userData = {
             name: userDataRequest.data.name,
             email: userDataRequest.data.email,
-            imageUrl: userDataRequest.data.imageUrl
+            imageUrl: userDataRequest.data.profileImage
           };
 
           // stores user data to context & update isAuthenticated to true
