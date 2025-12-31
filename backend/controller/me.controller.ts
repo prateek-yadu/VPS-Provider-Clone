@@ -31,7 +31,7 @@ export const subscribedPlans = async (req: customRequest, res: Response) => {
         const id = req.id; // gets user id 
 
         // fetches user subscribed plans 
-        const [user_plan]: any = await pool.query('SELECT u.in_use, u.purchased_at, u.expires_at, p.name, p.vCPU, p.memory, p.storage, p.backups FROM user_plans u INNER JOIN plans p ON u.plan_id=p.id WHERE u.user_id=?', [id]);
+        const [user_plan]: any = await pool.query('SELECT u.id, u.in_use, u.purchased_at, u.expires_at, p.name, p.vCPU, p.memory, p.storage, p.backups FROM user_plans u INNER JOIN plans p ON u.plan_id=p.id WHERE u.user_id=?', [id]);
 
         if (user_plan.length != 0) {
             // sends subscribed plan data 
