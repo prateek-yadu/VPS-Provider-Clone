@@ -41,7 +41,11 @@ export default function VPS() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false); // stores drawer state
     const [plans, setPlans] = useState<UserPlan[]>([]); // stores user plan info
 
-    const [vms, setVMs] = useState([]); // stores vms info
+    // handles vm option (start, stop, restart, delete) collapasble logic
+    const [isCollapsableOpen, setIsCollapsableOpen] = useState(false);
+    const [openedState, setOpenedState] = useState(""); // tracks which card's collapsable to open
+
+    const [vms, setVMs] = useState<VM[]>([]); // stores vms info
 
     const changeDrawerState = () => {
         setIsDrawerOpen(!isDrawerOpen);
@@ -75,6 +79,28 @@ export default function VPS() {
         alert(response.message);
     };
 
+    // update VM state (start, stop, restart)
+    const updateVMState = async (name: string, state: string) => {
+
+        const response = await (await fetch(`/api/v1/vms/${name}/${state}`, {
+            method: "PUT"
+        })).json();
+        alert(response.message);
+
+        setIsCollapsableOpen(!isCollapsableOpen); // closes collapsable
+    };
+
+    // deletes VM
+    const deleteVM = async (name: string) => {
+
+        const response = await (await fetch(`/api/v1/vms/${name}`, {
+            method: "DELETE"
+        })).json();
+        alert(response.message);
+
+        setIsCollapsableOpen(!isCollapsableOpen); // closes collapsable
+    };
+
     const resetForm = () => {
         setName("");
         setDescription("");
@@ -83,13 +109,17 @@ export default function VPS() {
     };
 
     // returns formated date eg. March 18, 2026
-    const formatDate = (d:string) => {
+    const formatDate = (d: string) => {
 
         const givenDate = new Date(d);
         const date = givenDate.getDate().toString();
         const month = givenDate.toLocaleDateString('default', { month: "long" }); // gets month name eg. march
         const year = givenDate.getFullYear();
         return `${month + " " + date + ", " + year}`;
+    };
+
+    const changeCollapsableState = () => {
+        setIsCollapsableOpen(!isCollapsableOpen);
     };
 
     useEffect(() => {
@@ -208,7 +238,7 @@ export default function VPS() {
 
                 {/* VM Box */}
                 {vms?.map((vm: VM) => (
-                    <div className="px-8 py-6 grid grid-cols-4 border-t-[1px] border-border-primary">
+                    <div className="px-8 py-6 grid grid-cols-4 border-t-[1px] border-border-primary" key={vm.name}>
 
                         {/* grid 1 - VM and plan Info */}
                         <div className="grid grid-cols-[32px_1fr] gap-x-4 grid-rows-2 items-center">
@@ -235,11 +265,36 @@ export default function VPS() {
                         </div>
 
                         {/* grid 4 - vm options (firewall, backup, start, stop, restart, delete) */}
-                        <div className="flex items-center justify-end gap-6">
+                        <div className="flex items-center justify-end gap-6 relative">
                             <button className="text-accent px-4 py-2 ring-1 rounded ring-accent text-sm font-medium hover:bg-accent hover:text-white transition-all duration-300 cursor-pointer">Manage</button>
-                            <button className="text-accent/70 hover:text-accent cursor-pointer transition-all duration-300"><Ellipsis /></button>
+                            <button className="text-accent/70 hover:text-accent cursor-pointer transition-all duration-300 z-40" onClick={() => {
+                                changeCollapsableState();
+                                setOpenedState(vm.name);
+                            }}><Ellipsis /></button>
+
+                            {/* VMs options collapsable (start, stop, restart, delete) */}
+                            <div className={`${isCollapsableOpen && vm.name == openedState ? "absolute" : "hidden"} border-[1px] rounded border-border-primary bg-white -bottom-[111px] w-36 right-10 z-50`}>
+                                <ul className="flex items-start flex-col w-full">
+                                    <li className="w-full"><button className="px-2 py-2 hover:bg-accent/[6%] hover:text-accent text-primary cursor-pointer w-full rounded-t" onClick={() => {
+                                        updateVMState(vm.name, "start");
+                                    }}>Start</button></li>
+                                    <li className="w-full"><button className="px-2 py-2 hover:bg-accent/[6%] hover:text-accent text-primary cursor-pointer w-full" onClick={() => {
+                                        updateVMState(vm.name, "stop");
+                                    }}>Stop</button></li>
+                                    <li className="w-full"><button className="px-2 py-2 hover:bg-accent/[6%] hover:text-accent text-primary cursor-pointer w-full" onClick={() => {
+                                        updateVMState(vm.name, "restart");
+                                    }}>Restart</button></li>
+                                    <li className="w-full"><button className="px-2 py-2 hover:bg-red-50 text-red-600 cursor-pointer w-full rounded-b" onClick={() => {
+                                        deleteVM(vm.name);
+                                    }}>Delete</button></li>
+                                </ul>
+                            </div>
                         </div>
 
+                        {/* overlay screen */}
+                        <div className={`${isCollapsableOpen ? "absolute" : "hidden"} top-0 left-0 right-0 bottom-0 z-40`} onClick={() => {
+                            changeCollapsableState();
+                        }}></div>
                     </div>
                 ))}
 
