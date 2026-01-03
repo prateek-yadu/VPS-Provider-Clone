@@ -1,4 +1,4 @@
-import { Bell, CircleQuestionMark, CircleUser, CreditCard, Home, LanguagesIcon, LogOut, Server, Store } from "lucide-react";
+import { Bell, CircleQuestionMark, CircleUser, CreditCard, Home, LanguagesIcon, LayoutDashboard, LogOut, Server, Store } from "lucide-react";
 import Branding from "../../branding.json";
 import { Link, Outlet, useLocation } from "react-router";
 import { useState } from "react";
@@ -18,9 +18,9 @@ export default function DashboardLayout() {
 
   const links = [
     {
-      name: "Home",
+      name: "Dashboard",
       href: "/dashboard",
-      icon: Home
+      icon: LayoutDashboard
     },
     {
       name: "VPS",
